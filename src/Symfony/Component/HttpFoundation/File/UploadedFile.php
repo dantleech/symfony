@@ -14,6 +14,7 @@ namespace Symfony\Component\HttpFoundation\File;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
 use Symfony\Component\HttpFoundation\File\MimeType\ExtensionGuesser;
+use Symfony\Component\HttpFoundation\File\Exception\UploadException;
 
 /**
  * A file uploaded through a form.
@@ -219,6 +220,46 @@ class UploadedFile extends File
         $isOk = $this->error === UPLOAD_ERR_OK;
 
         return $this->test ? $isOk : $isOk && is_uploaded_file($this->getPathname());
+    }
+
+    /**
+     * Throws an exception if the file is not valid
+     *
+     * @throws UploadException
+     */
+    public function validate()
+    {
+        if (false === $this->isValid()) {
+            // see http://www.php.net/manual/en/features.file-upload.errors.php#89374
+            switch ($code) { 
+                case UPLOAD_ERR_INI_SIZE: 
+                    $message = "The uploaded file exceeds the upload_max_filesize directive in php.ini"; 
+                    break; 
+                case UPLOAD_ERR_FORM_SIZE: 
+                    $message = "The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form"; 
+                    break; 
+                case UPLOAD_ERR_PARTIAL: 
+                    $message = "The uploaded file was only partially uploaded"; 
+                    break; 
+                case UPLOAD_ERR_NO_FILE: 
+                    $message = "No file was uploaded"; 
+                    break; 
+                case UPLOAD_ERR_NO_TMP_DIR: 
+                    $message = "Missing a temporary folder"; 
+                    break; 
+                case UPLOAD_ERR_CANT_WRITE: 
+                    $message = "Failed to write file to disk"; 
+                    break; 
+                case UPLOAD_ERR_EXTENSION: 
+                    $message = "File upload stopped by extension"; 
+                    break; 
+                default: 
+                    $message = "Unknown upload error"; 
+                    break; 
+            }
+
+            throw new UploadException($message);
+        }
     }
 
     /**
